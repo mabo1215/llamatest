@@ -31,7 +31,7 @@ def draw_character(char, start_x, start_y):
         print(f'绘制字符: 8')
         draw_eight(start_x, start_y)
     elif char == '9':
-        print(f'绘制字符: 8')
+        print(f'绘制字符: 9')
         draw_nine(start_x, start_y)
     else:
         print(f"Character '{char}' not recognized.")
@@ -48,9 +48,8 @@ def draw_zero(start_x, start_y):
 def draw_one(start_x, start_y):
     pyautogui.moveTo(start_x, start_y)
     pyautogui.mouseDown()  # Press down the mouse button
-    pyautogui.moveTo(start_x-41 , start_y - 50)  # Move to the starting position
-    pyautogui.moveTo(start_x-38, start_y + 50)  # Increase the length to 50 pixels (or adjust as needed)
-    pyautogui.moveTo(start_x - 35, start_y + 50)  # Increase the length to 50 pixels (or adjust as needed)
+    pyautogui.moveTo(start_x-5 , start_y + 50)  # Increase the length to 50 pixels (or adjust as needed)
+    pyautogui.moveTo(start_x, start_y + 50)  # Increase the length to 50 pixels (or adjust as needed)
     pyautogui.mouseUp()  # Release the mouse button
 
 def draw_two(start_x, start_y):
@@ -58,13 +57,11 @@ def draw_two(start_x, start_y):
     pyautogui.mouseDown()
 
     # Draw the top horizontal line
-    pyautogui.moveTo(start_x + 20, start_y)  # Move right
+    pyautogui.moveTo(start_x + 20, start_y+10)  # Move right
     # Draw the diagonal line to the bottom right
     pyautogui.moveTo(start_x + 20, start_y + 15)  # Move down to the middle
-    # Draw the middle horizontal line
-    pyautogui.moveTo(start_x, start_y + 15)  # Move left
     # Draw the bottom curve
-    pyautogui.moveTo(start_x, start_y + 30)  # Move down to the bottom
+    pyautogui.moveTo(start_x-5, start_y + 30)  # Move down to the bottom
     pyautogui.moveTo(start_x + 20, start_y + 30)  # Move right to finish the bottom
     pyautogui.mouseUp()
 
@@ -117,20 +114,16 @@ def draw_five(start_x, start_y):
     pyautogui.moveTo(start_x, start_y)
     pyautogui.mouseDown()
 
-    # Draw the top horizontal line
-    pyautogui.moveTo(start_x + 30, start_y)  # Move right for the top
+    pyautogui.moveTo(start_x+20, start_y)
+    pyautogui.mouseUp()
 
-    # Draw the right vertical line
-    pyautogui.moveTo(start_x + 30, start_y - 20)  # Move down
-
-    # Draw the bottom horizontal line
-    pyautogui.moveTo(start_x, start_y - 20)  # Move left for the bottom
-
-    # Draw the left vertical line
-    pyautogui.moveTo(start_x, start_y - 40)  # Move down for the left vertical line
+    pyautogui.moveTo(start_x, start_y-5)
+    pyautogui.mouseDown()
+    pyautogui.moveTo(start_x+15, start_y + 12)
+    pyautogui.moveTo(start_x + 15, start_y + 17)
 
     # Draw the middle horizontal line
-    pyautogui.moveTo(start_x + 20, start_y - 40)  # Move right for the middle
+    pyautogui.moveTo(start_x - 10, start_y + 25)  # Move right for the middle
 
     # Return to the starting position to complete the shape
     pyautogui.mouseUp()
@@ -141,31 +134,44 @@ def draw_six(start_x, start_y):
     pyautogui.moveTo(start_x + 20, start_y)  # Top horizontal line
     pyautogui.moveTo(start_x + 20, start_y + 15)  # Right vertical line
     pyautogui.moveTo(start_x, start_y + 15)  # Middle horizontal line
-    pyautogui.moveTo(start_x, start_y + 30)  # Bottom horizontal line
+    pyautogui.moveTo(start_x+10, start_y - 20)  # Bottom horizontal line
     pyautogui.mouseUp()
 
 def draw_seven(start_x, start_y):
-    pyautogui.moveTo(start_x, start_y)
+    pyautogui.moveTo(start_x-5, start_y)
     pyautogui.mouseDown()
     pyautogui.moveTo(start_x + 20, start_y)  # Top horizontal line
-    pyautogui.moveTo(start_x + 20, start_y - 30)  # Vertical line
+    pyautogui.moveTo(start_x - 20, start_y + 50)  # Vertical line
     pyautogui.mouseUp()
+
 
 def draw_eight(start_x, start_y):
     pyautogui.moveTo(start_x, start_y)
     pyautogui.mouseDown()
-    pyautogui.moveTo(start_x + 20, start_y)  # Top horizontal line
-    pyautogui.moveTo(start_x + 20, start_y + 15)  # Right vertical line
-    pyautogui.moveTo(start_x, start_y + 15)  # Middle horizontal line
-    pyautogui.moveTo(start_x, start_y + 30)  # Bottom horizontal line
+
+    pyautogui.moveTo(start_x - 10, start_y + 10)  # Top center
+
+
+    pyautogui.moveTo(start_x, start_y + 15)  # Top center
+    pyautogui.moveTo(start_x + 20, start_y+20)  # Right top
+
+    pyautogui.moveTo(start_x, start_y + 25)  # Bottom center
+
+    pyautogui.moveTo(start_x, start_y)  # Left top
     pyautogui.mouseUp()
 
 def draw_nine(start_x, start_y):
-    pyautogui.moveTo(start_x, start_y)
-    pyautogui.mouseDown()
-    pyautogui.moveTo(start_x + 20, start_y)  # Top horizontal line
-    pyautogui.moveTo(start_x + 20, start_y + 15)  # Right vertical line
-    pyautogui.moveTo(start_x, start_y + 15)  # Middle horizontal line
-    pyautogui.moveTo(start_x + 20, start_y + 15)  # Right vertical line
-    pyautogui.moveTo(start_x + 20, start_y + 30)  # Bottom horizontal line
-    pyautogui.mouseUp()
+    pyautogui.moveTo(start_x, start_y)          # Move to starting position
+    pyautogui.mouseDown()                        # Start drawing
+
+    # Draw the top horizontal line
+    pyautogui.moveTo(start_x -10, start_y-10)     # Top horizontal line
+
+    # Draw the right vertical curve
+    pyautogui.moveTo(start_x - 20, start_y)  # Move down
+    pyautogui.moveTo(start_x - 10 , start_y + 10)     # Move left for middle horizontal line
+    pyautogui.moveTo(start_x, start_y) # Move back to the right
+
+    # Draw the bottom vertical line
+    pyautogui.moveTo(start_x, start_y + 30) # Bottom vertical line
+    pyautogui.mouseUp()                            # Stop drawing
