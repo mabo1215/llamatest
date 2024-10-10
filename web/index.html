@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Handwriting Simulation</title>
+    <style>
+        canvas { border: 1px solid black; }
+    </style>
+</head>
+<body>
+    <canvas id="drawingCanvas" width="800" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Sample stroke data (replace with model output)
+        const strokeData = [
+            { x: 50, y: 100, type: 'start' },
+            { x: 60, y: 110, type: 'move' },
+            { x: 70, y: 120, type: 'move' },
+            { x: 80, y: 130, type: 'move' },
+            { x: 90, y: 140, type: 'end' }
+        ];
+
+        function drawStroke(data) {
+            ctx.beginPath();
+            for (let i = 0; i < data.length; i++) {
+                const point = data[i];
+                if (point.type === 'start') {
+                    ctx.moveTo(point.x, point.y);
+                } else if (point.type === 'move') {
+                    ctx.lineTo(point.x, point.y);
+                }
+            }
+            ctx.stroke();
+        }
+
+        // Call the function to draw the sample stroke
+        drawStroke(strokeData);
+    </script>
+</body>
+</html>

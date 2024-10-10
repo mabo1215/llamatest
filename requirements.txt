@@ -1,0 +1,9 @@
+transformers
+pyttsx3
+accelerate
+sounddevice
+speechrecognition
+sentencepiece
+protobuf
+
+
