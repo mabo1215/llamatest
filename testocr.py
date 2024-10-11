@@ -24,11 +24,16 @@ def solve_expression(expression):
     """
     解包含未知数 ? 的表达式，支持小数和分数的加减乘除运算
     """
+    print(f"Expression: {expression}")
+    # 将两个等号的第一个 '=' 替换为 '/'
+    if expression.count('=') > 1:
+        expression = expression.replace('=', '/', 1)  # 仅替换第一个等号
+    print(f"Expression: {expression}")
+
     # 检查表达式是否包含等号
     if '=' not in expression:
         expression += '=unknown'
 
-    # 将表达式拆分为左右两部分
     left_side, right_side = expression.split('=')
 
     # 如果右侧为空，则自动替换为 '?'，用 SymPy 可识别的符号替代空白部分
@@ -52,10 +57,9 @@ def solve_expression(expression):
     left_side = left_side.replace('➗', '/')  # 替换除法符号
     right_side = right_side.replace('✖', '*')
     right_side = right_side.replace('×', '*')
-    left_side = left_side.replace('x', '*')
+    right_side = right_side.replace('x', '*')
     right_side = right_side.replace('➗', '/')  # 替换除法符号
 
-    print(f"Left expression'{left_side}'", f"Right expression: '{right_side}'")
     try:
         # 使用 sympify 将字符串转换为 SymPy 表达式
         left_expr = sympify(left_side)
@@ -63,7 +67,7 @@ def solve_expression(expression):
         right_expr = sympify(right_side)
         print(f"Right expression after sympify: {right_expr}")  # 打印右侧表达式
     except Exception as e:
-        raise ValueError(f"无法解析表达式，请检查输入格式: {e}")
+        return 'err'
 
     equation = Eq(left_expr, right_expr)
 
@@ -72,7 +76,7 @@ def solve_expression(expression):
     return solution
 
 # 示例表达式测试
-expression = "98 ➗ 10 = "  # 测试除法表达式
+expression = "(544 + 392) = 8 = "  # 测试除法表达式
 try:
     result = solve_expression(expression)
     print(f"未知数的值为: {result}")

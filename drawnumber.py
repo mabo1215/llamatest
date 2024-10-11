@@ -33,8 +33,34 @@ def draw_character(char, start_x, start_y):
     elif char == '9':
         print(f'绘制字符: 9')
         draw_nine(start_x, start_y)
+    elif char == '.':
+        print(f'绘制字符: .')
+        draw_dot(start_x, start_y)
+    elif char == '-':
+        print(f'绘制字符: -')
+        draw_neg(start_x, start_y)
+    elif char == '/':
+        print(f'绘制字符: /')
+        draw_devide(start_x, start_y)
     else:
         print(f"Character '{char}' not recognized.")
+
+def draw_devide(start_x, start_y):
+    pyautogui.moveTo(start_x + 20, start_y-20)  # Top horizontal line
+    pyautogui.mouseDown()
+    pyautogui.moveTo(start_x - 20, start_y + 20)  # Top horizontal line
+    pyautogui.mouseUp()
+
+def draw_neg(start_x, start_y):
+    pyautogui.moveTo(start_x-10, start_y)  # Top horizontal line
+    pyautogui.mouseDown()
+    pyautogui.moveTo(start_x+10, start_y)  # Top horizontal line
+    pyautogui.mouseUp()
+def draw_dot(start_x, start_y):
+    pyautogui.moveTo(start_x, start_y+20)  # Top horizontal line
+    pyautogui.mouseDown()
+    pyautogui.moveTo(start_x, start_y + 21)  # Top horizontal line
+    pyautogui.mouseUp()
 
 def draw_zero(start_x, start_y):
     pyautogui.moveTo(start_x, start_y)
