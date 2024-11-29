@@ -3,9 +3,9 @@ import torch
 from PIL import Image
 from transformers import MllamaForConditionalGeneration, AutoProcessor
 
-# model_id = "meta-llama/Llama-3.2-11B-Vision-Instruct"
+model_id = "meta-llama/Llama-3.2-11B-Vision-Instruct"
 # model_id = "meta-llama/Llama-3.2-1B-Instruct"
-model_id = "meta-llama/Llama-3.2-90B-Vision-Instruct"
+# model_id = "meta-llama/Llama-3.2-90B-Vision-Instruct"
 
 model = MllamaForConditionalGeneration.from_pretrained(
     model_id,

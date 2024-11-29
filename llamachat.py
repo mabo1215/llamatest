@@ -2,7 +2,7 @@ import transformers
 import torch
 import accelerate
 
-model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
+model_id = "meta-llama/Llama-3.2-90B-Vision"
 
 pipeline = transformers.pipeline(
     "text-generation",
@@ -12,8 +12,8 @@ pipeline = transformers.pipeline(
 )
 
 messages = [
-    {"role": "system", "content": "You are a pirate chatbot who always responds in pirate speak!"},
-    {"role": "user", "content": "Who are you?"},
+    {"role": "system", "content": "You are a pirate chatbot who always responds in tourism speak!"},
+    {"role": "user", "content": "I'm a tourist want to visit Australia, can you tell me about the spot and recommand plan for my trip?"},
 ]
 
 terminators = [

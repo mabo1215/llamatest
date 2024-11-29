@@ -12,7 +12,7 @@ from drawnumber import draw_character
 # from pix2text import Pix2Text, merge_line_texts
 
 pytesseract.pytesseract.tesseract_cmd = r'D:/Program Files/Tesseract-OCR/tesseract.exe'
-tessdata_dir_config = '--tessdata-dir ' + f'F:\source\llamatest/tessdata_best'
+tessdata_dir_config = '--tessdata-dir ' + 'F:/source/llamatest/tessdata_best'
 custom_config = r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789+-*/=()÷;'
 full_config = f'{custom_config} {tessdata_dir_config}'
 
@@ -114,7 +114,7 @@ def recog_expression():
     pil_image.save("threshold_image.png")
 
     expression = pytesseract.image_to_string(pil_image, config=full_config)
-
+    print(f"The expression '{expression}'")
     # p2t = Pix2Text()
     # expression = p2t.recognize(pil_image, return_text=True, save_analysis_res='en1-out.jpg')
 
@@ -125,7 +125,6 @@ def recog_expression():
         return 0
 
     expression = str(expression)
-    print(f"The result of the expression '{expression}'")
     result = solve_expression(expression)
 
     # result = sympify(expression)
