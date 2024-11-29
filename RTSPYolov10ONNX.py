@@ -225,13 +225,14 @@ def postprocess_yolo_output(output, frame_shape, input_shape, conf_threshold=0.2
 def draw_detections(frame, detections, labels, query_id):
     count = 0
     for class_id, confidence, bbox in detections:
-        if query_id == -1 or class_id == query_id:  # If query_id is -1, include all classes
-            count += 1
-            x1, y1, x2, y2 = bbox
-            label = f"{labels[class_id]}: {confidence:.2f}"
-            print(f"Class ID: {class_id}, Confidence: {confidence}, BBox: {bbox}")
-            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        if 0 <= class_id < len(labels):  # Check if class_id is valid
+            if query_id == -1 or class_id == query_id:  # If query_id is -1, include all classes
+                count += 1
+                x1, y1, x2, y2 = bbox
+                label = f"{labels[class_id]}: {confidence:.2f}"
+                print(f"Class ID: {class_id}, Confidence: {confidence}, BBox: {bbox}")
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
     return frame, count
 
 
@@ -243,7 +244,8 @@ def process_rtsp_stream(rtsp_url, session, input_shape, labels, query_id):
         return
 
     last_processed_time = 0  # Tracks the last frame's processing time
-    process_interval = 1  # Process one frame every 5 seconds
+    process_interval = 1  # Process one frame every 1 second
+    previous_detections = []  # Store the previous frame's bounding boxes
 
     while True:
         ret, frame = cap.read()
@@ -270,8 +272,15 @@ def process_rtsp_stream(rtsp_url, session, input_shape, labels, query_id):
         # Postprocess output
         detections = postprocess_yolo_output(output, frame.shape, input_shape, conf_threshold=0.25, iou_threshold=0.45)
 
-        # Draw results and count detections
+        # If no new detections, use the previous detections
+        if len(detections) == 0:
+            detections = previous_detections
+
+        # Draw the detections on the frame
         frame, count = draw_detections(frame, detections, labels, query_id)
+
+        # Update the previous detections with the current frame's detections
+        previous_detections = detections
 
         # Display query, count, and FPS on the frame
         query_text = f"Query: {'All' if query_id == -1 else labels[query_id]}"
@@ -290,7 +299,6 @@ def process_rtsp_stream(rtsp_url, session, input_shape, labels, query_id):
 
     cap.release()
     cv2.destroyAllWindows()
-
 
 if __name__ == "__main__":
     model_path = "F:/source/yolov10/yolov10x.onnx"
