@@ -172,12 +172,16 @@ def postprocess_yolo_output(output, frame_shape, input_shape, conf_threshold=0.2
     detections = []
     h_frame, w_frame = frame_shape[:2]
     h_input, w_input = input_shape
-    # scale = min(w_input / w_frame, h_input / h_frame)
-    scale = min(w_frame / w_input, h_frame / h_input)
+    scale = min(w_input / w_frame, h_input / h_frame)
+    # scale = min(w_frame / w_input, h_frame / h_input)
     new_width = int(w_frame * scale)
     new_height = int(h_frame * scale)
+    # new_width = int(w_input * scale)
+    # new_height = int(h_input * scale)
     pad_x = (w_input - new_width) // 2
     pad_y = (h_input - new_height) // 2
+    # pad_x = (w_frame - new_width) // 2
+    # pad_y = (h_frame - new_height) // 2
 
     # Assume `output` is a numpy array of shape (N, 85), where:
     # - N: Number of detected objects
@@ -289,10 +293,20 @@ def process_rtsp_stream(rtsp_url, session, input_shape, labels, query_id):
 
 
 if __name__ == "__main__":
-    model_path = "F:/source/yolov10/yolov10n.onnx"
+    model_path = "F:/source/yolov10/yolov10x.onnx"
     rtsp_url = "rtsp://192.168.31.120:8554/oclea-stream1"
     input_shape = (640, 640)  # YOLOv10 expects 640x640 input
-    labels = ["person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat", "traffic light"]  # Replace with your model's labels
+    labels = [
+    "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light",
+    "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
+    "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee",
+    "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard",
+    "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple",
+    "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch",
+    "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard",
+    "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase",
+    "scissors", "teddy bear", "hair drier", "toothbrush"
+    ]
     query_id = -1  # Use -1 to include all classes, or specify a class ID
 
     yolo_session = initialize_yolo_model(model_path)
