@@ -5,5 +5,15 @@ sounddevice
 speechrecognition
 sentencepiece
 protobuf
+opencv-python
+torch>=2.0.1
+torchvision>=0.15.2
+onnx>=1.14.0
+onnxruntime>=1.20.1
+pycocotools==2.0.7
+PyYAML>=6.0.1
+scipy>=1.13.0
+onnxsim>=0.4.36
+onnxruntime-gpu>=1.18.0
 
 
