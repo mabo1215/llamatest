@@ -172,7 +172,8 @@ def postprocess_yolo_output(output, frame_shape, input_shape, conf_threshold=0.2
     detections = []
     h_frame, w_frame = frame_shape[:2]
     h_input, w_input = input_shape
-    scale = min(w_input / w_frame, h_input / h_frame)
+    # scale = min(w_input / w_frame, h_input / h_frame)
+    scale = min(w_frame / w_input, h_frame / h_input)
     new_width = int(w_frame * scale)
     new_height = int(h_frame * scale)
     pad_x = (w_input - new_width) // 2
@@ -237,7 +238,8 @@ def process_rtsp_stream(rtsp_url, session, input_shape, labels, query_id):
         print("Unable to connect to the RTSP stream")
         return
 
-    prev_time = time.time()
+    last_processed_time = 0  # Tracks the last frame's processing time
+    process_interval = 1  # Process one frame every 5 seconds
 
     while True:
         ret, frame = cap.read()
@@ -246,8 +248,16 @@ def process_rtsp_stream(rtsp_url, session, input_shape, labels, query_id):
             break
 
         curr_time = time.time()
-        fps = 1 / (curr_time - prev_time)
-        prev_time = curr_time
+
+        # Skip frames unless the interval has passed
+        if curr_time - last_processed_time < process_interval:
+            # Optionally, show the current frame without processing
+            cv2.imshow('RTSP Stream', frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+            continue
+
+        last_processed_time = curr_time
 
         # Preprocess input and run inference
         input_tensor = preprocess_yolo_input(frame, input_shape)
@@ -262,12 +272,12 @@ def process_rtsp_stream(rtsp_url, session, input_shape, labels, query_id):
         # Display query, count, and FPS on the frame
         query_text = f"Query: {'All' if query_id == -1 else labels[query_id]}"
         count_text = f"Count: {count}"
-        fps_text = f"FPS: {fps:.2f}"
+        timestamp_text = f"Timestamp: {time.strftime('%H:%M:%S')}"
         cv2.putText(frame, query_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
         cv2.putText(frame, count_text, (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
-        cv2.putText(frame, fps_text, (10, 110), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+        cv2.putText(frame, timestamp_text, (10, 110), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
 
-        # Show the frame
+        # Show the processed frame
         cv2.imshow('RTSP Stream', frame)
 
         # Press 'q' to exit
