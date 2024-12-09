@@ -60,7 +60,7 @@ def letterbox(im, new_shape=(640, 640), color=(114, 114, 114), auto=True, scaleu
 
     return im, r, (left, top)
 
-def read_tensor_from_binary2(binary_file_path, tensor_shape=(1, 1, 3549, 85)):
+def read_2(binary_file_path, tensor_shape=(1, 1, 3549, 85)):
     """
     Read the YOLOv6 inference tensor from a binary file as raw bytes without converting to np.float32.
 
@@ -83,7 +83,7 @@ def read_tensor_from_binary2(binary_file_path, tensor_shape=(1, 1, 3549, 85)):
         return tensor
     return None
 
-def read_tensor_from_binary3(binary_file_path, tensor_shape=(1, 1, 10647, 85)):
+def read3(binary_file_path, tensor_shape=(1, 1, 10647, 85)):
     """
     Read the YOLOv6 inference tensor from a binary file.
 
@@ -103,7 +103,7 @@ def read_tensor_from_binary3(binary_file_path, tensor_shape=(1, 1, 10647, 85)):
     return tensor
 
 
-def parse_yolov6_output(tensor, confidence_threshold=0.25, num_classes=80):
+def parse_yolov6_output(tensor, confidence_threshold=0.25, imgsz=640,num_classes=80):
     """
     Parse YOLOv6 inference results into label format, including bounding boxes, class ID, and confidence.
 
@@ -113,7 +113,7 @@ def parse_yolov6_output(tensor, confidence_threshold=0.25, num_classes=80):
     :return: Parsed label results, formatted as [(x1, y1, x2, y2, class_id, confidence), ...]
     """
     # Remove batch and channel dimensions
-    predictions = tensor[0, 0, :, :]
+    predictions = tensor[0, 0, :, :]  # Shape: (1,1, 8400, 85) -> (8400, 85)
 
     # Separate bounding boxes, confidence, and class probabilities
     bboxes = predictions[:, :4]  # [x, y, w, h]
@@ -134,7 +134,7 @@ def parse_yolov6_output(tensor, confidence_threshold=0.25, num_classes=80):
     # Format results into a list
     results = []
     for bbox, class_id, confidence in zip(bboxes, class_ids, confidences):
-        x, y, w, h = bbox
+        x, y, w, h = convert_bboxes_to_xyminmax(bbox,imgsz)[0]
         results.append((int(class_id),int(x), int(y), int(w), int(h), float(confidence)))
     return results
 
@@ -257,6 +257,35 @@ def nms(bboxes, iou_threshold):
         ]
 
     return filtered_bboxes
+def convert_bboxes_to_xyminmax(bboxes,imgsz=640):
+    """
+    转换 YOLO 输出的 x_center, y_center, width, height 到 x_min, y_min, x_max, y_max 格式。
+    Args:
+        bboxes (numpy.ndarray): 输入边界框数组，形状为 (N, 4)，每行为 [x_center, y_center, width, height]
+
+    Returns:
+        numpy.ndarray: 转换后的边界框坐标，格式为 [x_min, y_min, x_max, y_max]
+    """
+    # 如果是 1D 数据重塑为 2D
+    if bboxes.ndim == 1:
+        bboxes = bboxes.reshape(-1, 4)
+
+    # 提取参数
+    x_center = bboxes[:, 0]
+    y_center = bboxes[:, 1]
+    width = bboxes[:, 2]
+    height = bboxes[:, 3]
+
+    # # 转换为实际的 x_min, y_min, x_max, y_max
+    # x_min = x_center - width / 2
+    # y_min = y_center - height / 2
+    # x_max = x_center + width / 2
+    # y_max = y_center + height / 2
+
+    # 堆叠成最终格式
+    converted_bboxes = np.stack((x_center, y_center, width, height), axis=1)
+
+    return converted_bboxes
 
 
 def convert_label_to_nms_result(label,img_width = 416, img_height = 416,iou_threshold = 0.5):
@@ -267,12 +296,12 @@ def convert_label_to_nms_result(label,img_width = 416, img_height = 416,iou_thre
     :return: NMS result list [(x1, y1, x2, y2, class_id, confidence)]
     """
     # Convert bbox to np.float32 tuple
-    bboxes = [
-        yolo_to_bbox(label, img_width, img_height) # Add confidence score
-        for label in label
-    ]
+    # bboxes = [
+    #     yolo_to_bbox(label, img_width, img_height) # Add confidence score
+    #     for label in label
+    # ]
     # print(bboxes)
-    filtered_bboxes = nms(bboxes, iou_threshold)
+    filtered_bboxes = nms(label, iou_threshold)
     # Return NMS result
     return filtered_bboxes
 
@@ -295,7 +324,46 @@ def process_image(path, stride=3, half=True):
 
   return image, img_src, img_size
 
+
 def demo_postprocess(outputs, img_size, p6=False):
+    """
+    用于处理 YOLO 输出。
+    修正 grids 和 expanded_strides 使其与 outputs 匹配。
+    """
+    grids = []
+    expanded_strides = []
+    strides = [8, 16, 32] if not p6 else [8, 16, 32, 64]
+
+    hsizes = [img_size[0] // stride for stride in strides]
+    wsizes = [img_size[1] // stride for stride in strides]
+
+    for hsize, wsize, stride in zip(hsizes, wsizes, strides):
+        # 生成每个尺度的网格
+        xv, yv = np.meshgrid(np.arange(wsize), np.arange(hsize))
+        grid = np.stack((xv, yv), axis=-1).reshape(1, -1, 2)  # 重塑维度
+        grids.append(grid)
+
+        # 为每个网格生成步幅
+        expanded_stride = np.full(grid.shape, stride)  # 创建步幅
+        expanded_strides.append(expanded_stride)
+
+    # 合并所有尺度的网格与步幅
+    grids = np.concatenate(grids, axis=1)  # 合并所有尺度的网格
+    expanded_strides = np.concatenate(expanded_strides, axis=1)  # 合并所有尺度的步幅
+
+    # 确保 grids 和 expanded_strides 的维度与 outputs 匹配
+    # 输出尺寸应与 (N, 2) 保持一致
+    if outputs.shape[1] != grids.shape[1]:
+        grids = grids[:, :outputs.shape[1], :]
+        expanded_strides = expanded_strides[:, :outputs.shape[1], :]
+
+    # 修正计算 (确保输出匹配网格步幅和偏移量)
+    outputs[..., :2] = (outputs[..., :2] + grids) * expanded_strides
+    outputs[..., 2:4] = np.exp(outputs[..., 2:4]) * expanded_strides
+
+    return outputs
+
+def demo_2(outputs, img_size, p6=False):
     grids = []
     expanded_strides = []
     strides = [8, 16, 32] if not p6 else [8, 16, 32, 64]
@@ -312,17 +380,34 @@ def demo_postprocess(outputs, img_size, p6=False):
 
     grids = np.concatenate(grids, 1)
     expanded_strides = np.concatenate(expanded_strides, 1)
+
+    if outputs.shape[1] != grids.shape[1]:
+        grids = grids[:, :outputs.shape[1], :]
+        expanded_strides = expanded_strides[:, :outputs.shape[1], :]
+
     outputs[..., :2] = (outputs[..., :2] + grids) * expanded_strides
     outputs[..., 2:4] = np.exp(outputs[..., 2:4]) * expanded_strides
 
     return outputs
+
+
+def normalize_to_pixel_coords(coord, imgsz=[640, 640]):
+
+    x1_pixel = int(coord[0] * imgsz[0])/100
+    y1_pixel = int(coord[1] * imgsz[1])/100
+    x2_pixel = int(coord[2] * imgsz[0])/100
+    y2_pixel = int(coord[3] * imgsz[1])/100
+
+    pixel_coords = [x1_pixel, y1_pixel, x2_pixel, y2_pixel]
+
+    return pixel_coords
 
 def display(image_path,tensor,imgsz,conf_thres,iou_thres):
     # Load the image
     image = cv2.imread(image_path)
 
     # Parse the YOLOv6 output
-    labels = parse_yolov6_output(tensor, confidence_threshold=conf_thres)
+    labels = parse_yolov6_output(tensor, confidence_threshold=conf_thres,imgsz=imgsz)
 
     # Convert bounding boxes to pixel coordinates
     converted_labels = convert_label_to_nms_result(labels,img_width = imgsz, img_height = imgsz,iou_threshold = iou_thres)
@@ -331,14 +416,18 @@ def display(image_path,tensor,imgsz,conf_thres,iou_thres):
     # Draw bounding boxes and labels on the image
     for label in converted_labels:
         class_id, x1, y1, x2, y2, confidence = label
+        normalized_coords = label[1:5]
+        print(normalized_coords)
         name = coco_classes[class_id]
-        print(
-            f"BBox: ({int(x1)}, {int(y1)}), ({int(x2)}, {int(y2)}), Class ID: {name}, Confidence: {confidence:.2f}")
+        # print(f"BBox1: ({int(x1)}, {int(y1)}), ({int(x2)}, {int(y2)}), Class: {name}, Confidence: {confidence:.2f}")
+        pixel_coords = normalize_to_pixel_coords(normalized_coords, [imgsz,imgsz])
+        x_min, y_min,x_max,y_max = pixel_coords
+        print(f"BBox: ({int(x_min)}, {int(y_min)}), ({int(x_max)}, {int(y_max)}), Class: {name}, Confidence: {confidence:.2f}")
         # Draw the bounding box
-        cv2.rectangle(image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
+        cv2.rectangle(image, (int(x_min), int(y_min)), (int(x_max), int(y_max)), (0, 255, 0), 2)
         # Draw the label
         label_text = f"{name}: {confidence:.2f}"
-        cv2.putText(image, label_text, (int(x1), int(y1) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+        cv2.putText(image, label_text, (int(x_min), int(y_min) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
     # Show the image with bounding boxes
     cv2.imshow("NNCTRL Inference", image)
@@ -368,17 +457,113 @@ def read_tensor_from_binary(binary_file_path, tensor_shape=(1, 1, 8400, 85)):
         return tensor
     return None
 
+def transfer_bin(tensor):
+    output = tensor.squeeze(0).squeeze(0)  # 变成 (3549, 85)
+
+    x_center = output[:, 0]
+    y_center = output[:, 1]
+    width = output[:, 2]
+    height = output[:, 3]
+
+
+    # 转换为 [x_min, y_min, x_max, y_max]
+    x_min = x_center - width / 2
+    y_min = y_center - height / 2
+    x_max = x_center + width / 2
+    y_max = y_center + height / 2
+
+    # 确保 x_min, y_min, x_max, y_max 是 PyTorch 张量
+    x_min = torch.tensor(x_min) if isinstance(x_min, np.ndarray) else x_min
+    y_min = torch.tensor(y_min) if isinstance(y_min, np.ndarray) else y_min
+    x_max = torch.tensor(x_max) if isinstance(x_max, np.ndarray) else x_max
+    y_max = torch.tensor(y_max) if isinstance(y_max, np.ndarray) else y_max
+
+    # 使用 torch.stack
+    bboxes = torch.stack([x_min, y_min, x_max, y_max], dim=1)
+
+    # 提取 object confidence 和 class confidence
+    object_conf = output[:, 4]
+    class_conf = output[:, 5:]  # 后80列是每个类别的分数
+
+    # 计算最终的置信度和类别ID
+    def ensure_tensor(x):
+        """确保输入是 PyTorch 张量"""
+        if isinstance(x, np.ndarray):
+            return torch.tensor(x)
+        return x
+
+    # 确保 class_conf 是 PyTorch 张量
+    class_conf = ensure_tensor(class_conf)
+
+    # 计算类别 ID
+    class_id = torch.argmax(class_conf, dim=1)
+    if isinstance(object_conf, np.ndarray):
+        object_conf = torch.tensor(object_conf)
+
+    # 计算置信度
+    confidence = object_conf * class_conf[torch.arange(len(class_conf)), class_id]  # 置信度是object_conf乘以最大class_conf
+
+    # 拼接结果
+    final_output = torch.cat([bboxes, confidence.unsqueeze(1), class_id.unsqueeze(1)], dim=1)
+
+    # 转换为 NumPy 格式（如果需要）
+    final_output_np = final_output.numpy()
+
+    return final_output_np
+
+def draw_detections(image_path, detections):
+    """
+    在原图上绘制检测结果
+    Args:
+        image_path (str): 原图路径
+        detections (numpy.ndarray): 检测结果，形状为 (N, 6)，包含 [x_min, y_min, x_max, y_max, confidence, class_id]
+    """
+    # 读取图像
+    image = cv2.imread(image_path)
+    if image is None:
+        print("无法加载图像:", image_path)
+        return
+
+    # 遍历检测结果
+    for det in detections:
+        print(det)
+        x_min, y_min, x_max, y_max, confidence, class_id = det
+        # print(x_min, y_min, x_max, y_max, confidence, class_id)
+
+        # 将坐标转换为整数
+        x_min, y_min, x_max, y_max = map(int, [x_min, y_min, x_max, y_max])
+
+        # 绘制边界框
+        cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
+
+        # 显示类别 ID 和置信度
+        label = f"ID: {int(class_id)}, Conf: {confidence:.2f}"
+        cv2.putText(image, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+    # 显示结果
+    cv2.imshow("Detections", image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+    # 可选择保存结果
+    result_path = "detection_result.jpg"
+    cv2.imwrite(result_path, image)
+    print(f"检测结果已保存到: {result_path}")
+
 # Main function to input image and draw bounding boxes and labels
 if __name__ == "__main__":
-    image_path = "C:/work/datasets/test/img/l640.jpg"
-    binary_file_path = "C:/work/datasets/test/newoutputs/l640xxout.bin"
+    image_path = "F:/source/llamatest/bininference/img/l640.jpg"
+    binary_file_path = "F:/source/llamatest/bininference/out/l640xxout.bin"
     device = 'cpu'
-    x_tensor_shape = (1,1, 8400, 85)
-    # v5_tensor_shape = (1,1, 10647, 85)
+    tensor_shape = (1,1, 8400, 85)  # For YOLOX_X or YOLOX_Large
     imgsz = 640
 
+    # tensor_shape = (1, 1, 3549, 85)  # For YOLOX_TINY or YOLOX_NANO
+    # imgsz = 416
+
+
     # Confidence threshold
-    conf_thres: float = .45  # @param {type:"number"}
+    conf_thres: float = .75  # @param {type:"number"}
     iou_thres: float = .45  # @param {type:"number"}
     max_det: int = 1000  # @param {type:"integer"}
     agnostic_nms: bool = False  # @param {type:"boolean"}
@@ -397,13 +582,16 @@ if __name__ == "__main__":
     ]
 
     # Read the tensor from the binary file
-    tensor = read_tensor_from_binary(binary_file_path, tensor_shape=x_tensor_shape)
+    tensor = read_tensor_from_binary(binary_file_path, tensor_shape=tensor_shape)
 
-    outres = demo_postprocess(tensor[0], img_size=[imgsz, imgsz])
+    # final_output_np = transfer_bin(tensor)
+    # print(final_output_np)
 
-    trs = outres.to(torch.float32)
-    print(trs)
+    postres = demo_postprocess(tensor, img_size=[imgsz, imgsz],p6=False)
 
-    # #Load the image
-    # display(image_path,outres,imgsz,conf_thres,iou_thres)
+    # draw_detections(image_path, postres)
+
+
+    # Load the image
+    display(image_path,postres,imgsz,conf_thres,iou_thres)
 
