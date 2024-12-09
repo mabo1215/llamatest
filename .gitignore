@@ -2,6 +2,12 @@
 .idea/
 .idea\
 mathdataset/
+bininference\img\
+bininference\out\
+llamatest\bininference\img\
+llamatest\bininference\img\*
+llamatest\bininference\out\
+llamatest\bininference\out\*
 *.onnx
 *.pt
 *.pth

@@ -79,7 +79,7 @@ def read_tensor_from_binary(binary_file_path, tensor_shape=(1, 1, 3549, 85)):
 
         # Convert the unpacked data into a numpy array and reshape it into the tensor shape
         tensor = np.array(unpacked_data, dtype=np.float32).reshape(tensor_shape)
-        print(unpacked_data)
+
         return tensor
     return None
 
@@ -297,11 +297,12 @@ def process_image(path, stride=3, half=True):
 
 # Main function to input image and draw bounding boxes and labels
 if __name__ == "__main__":
-    image_path = "C:/work/datasets/test/img/mt416.jpg"
-    binary_file_path = "C:/work/datasets/test/newoutputs/mt416xout.bin"
+    image_path = "F:/source/llamatest/bininference/img/bk416.jpg"
+    binary_file_path = "F:/source/llamatest/bininference/out/bk416v5out.bin"
     device = 'cpu'
-    v10_tensor_shape = (1,1, 3549, 85)
-    # v5_tensor_shape = (1,1, 10647, 85)
+    # v10_tensor_shape = (1,1, 3549, 85)
+    v5_tensor_shape = (1,1, 10647, 85)
+    imgsz =416
 
     # Confidence threshold
     conf_thres: float = .45  # @param {type:"number"}
@@ -323,7 +324,7 @@ if __name__ == "__main__":
     ]
 
     # Read the tensor from the binary file
-    tensor = read_tensor_from_binary(binary_file_path, tensor_shape=v10_tensor_shape)
+    tensor = read_tensor_from_binary(binary_file_path, tensor_shape=v5_tensor_shape)
 
     # Load the image
     image = cv2.imread(image_path)
@@ -333,7 +334,7 @@ if __name__ == "__main__":
     classes: Optional[List[int]] = None  # the classes to keep
 
     # Convert bounding boxes to pixel coordinates
-    converted_labels = convert_label_to_nms_result(labels,img_width = 416, img_height = 416,iou_threshold = 0.5)
+    converted_labels = convert_label_to_nms_result(labels,img_width = imgsz, img_height = imgsz,iou_threshold = 0.5)
 
     # Print the labels (class ID, bbox coordinates,  confidence)
     # Draw bounding boxes and labels on the image
