@@ -1,5 +1,11 @@
 # created by virtualenv automatically
 .idea/
 .idea\
+mathdataset/
+*.onnx
+*.pt
+*.pth
 *.png
 *.pyc
+*.jpg
+*.bin
