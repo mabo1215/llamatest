@@ -210,13 +210,13 @@ def demo_postprocess(outputs, img_size, p6=False):
 
     return outputs
 
-def multiclass_nms(boxes, scores, nms_thr, score_thr, class_agnostic=True):
+def multiclass_nms(boxes, scores, iou_thres=0.45, score_thr=0.45, agnostic_nms=True):
     """Multiclass NMS implemented in Numpy"""
-    if class_agnostic:
+    if agnostic_nms:
         nms_method = multiclass_nms_class_agnostic
     else:
         nms_method = multiclass_nms_class_aware
-    return nms_method(boxes, scores, nms_thr, score_thr)
+    return nms_method(boxes, scores, iou_thres, score_thr)
 
 def vis(img, boxes, scores, cls_ids, class_names=None):
 
@@ -272,19 +272,19 @@ def read_tensor_from_binary(binary_file_path, tensor_shape=(1, 1, 8400, 85)):
         return tensor
     return None
 
-def draw_detections(image_path, predictions,conf_thres,COCO_CLASSES):
+def draw_detections(image_path, predictions,conf_thres,iou_thres,COCO_CLASSES,agnostic_nms):
     image = cv2.imread(image_path)
 
     boxes = predictions[:, :4]
     scores = predictions[:, 4:5] * predictions[:, 5:]
-
     boxes_xyxy = np.ones_like(boxes)
     boxes_xyxy[:, 0] = boxes[:, 0] - boxes[:, 2]/2.
     boxes_xyxy[:, 1] = boxes[:, 1] - boxes[:, 3]/2.
     boxes_xyxy[:, 2] = boxes[:, 0] + boxes[:, 2]/2.
     boxes_xyxy[:, 3] = boxes[:, 1] + boxes[:, 3]/2.
-    dets = multiclass_nms(boxes_xyxy, scores, nms_thr=0.45, score_thr=conf_thres)
-    print(dets.shape)
+    print(boxes_xyxy[0],boxes.shape,boxes_xyxy.shape)
+    dets = multiclass_nms(boxes_xyxy, scores, iou_thres=iou_thres, score_thr=conf_thres,agnostic_nms=agnostic_nms)
+
     if dets is not None:
         final_boxes, final_scores, final_cls_inds = dets[:, :4], dets[:, 4], dets[:, 5]
         origin_img = vis(image, final_boxes, final_scores, final_cls_inds, class_names=COCO_CLASSES)
@@ -296,25 +296,25 @@ def draw_detections(image_path, predictions,conf_thres,COCO_CLASSES):
 
 # Main function to input image and draw bounding boxes and labels
 if __name__ == "__main__":
-    image_path = "F:/source/llamatest/bininference/img/mt416.jpg"
-    binary_file_path = "F:/source/llamatest/bininference/out/mt416xout.bin"
+    image_path = "F:/source/llamatest/bininference/img/l640.jpg"
+    binary_file_path = "F:/source/llamatest/bininference/out/l640xxout.bin"
     device = 'cpu'
-    # tensor_shape = (1, 8400, 85)  # For YOLOX_X or YOLOX_Large
-    # imgsz = 640
+    tensor_shape = (1, 8400, 85)  # For YOLOX_X or YOLOX_Large
+    imgsz = 640
 
-    tensor_shape = (1, 3549, 85)  # For YOLOX_TINY or YOLOX_NANO
-    imgsz = 416
+    # tensor_shape = (1, 3549, 85)  # For YOLOX_TINY or YOLOX_NANO
+    # imgsz = 416
 
 
     # Confidence threshold
     conf_thres: float = .65  # @param {type:"number"}
     iou_thres: float = .45  # @param {type:"number"}
     max_det: int = 1000  # @param {type:"integer"}
-    agnostic_nms: bool = False  # @param {type:"boolean"}
+    agnostic_nms: bool = True  # @param {type:"boolean"}
 
     # Read the tensor from the binary file
     tensor = read_tensor_from_binary(binary_file_path, tensor_shape=tensor_shape)
 
     predictions = demo_postprocess(tensor, [imgsz,imgsz])[0]
 
-    draw_detections(image_path, predictions,conf_thres,COCO_CLASSES)
+    draw_detections(image_path, predictions,conf_thres,iou_thres,COCO_CLASSES,agnostic_nms)
