@@ -218,19 +218,17 @@ def multiclass_nms(boxes, scores, nms_thr, score_thr, class_agnostic=True):
         nms_method = multiclass_nms_class_aware
     return nms_method(boxes, scores, nms_thr, score_thr)
 
-def vis(img, boxes, scores, cls_ids, conf=0.5, class_names=None):
+def vis(img, boxes, scores, cls_ids, class_names=None):
 
     for i in range(len(boxes)):
         box = boxes[i]
         cls_id = int(cls_ids[i])
         score = scores[i]
-        if score < conf:
-            continue
         x0 = int(box[0])
         y0 = int(box[1])
         x1 = int(box[2])
         y1 = int(box[3])
-
+        print(f"Box: {box}, Score: {score}, Class ID: {cls_id}, Class Name: {class_names[cls_id]}")
         color = (_COLORS[cls_id] * 255).astype(np.uint8).tolist()
         text = '{}:{:.1f}%'.format(class_names[cls_id], score * 100)
         txt_color = (0, 0, 0) if np.mean(_COLORS[cls_id]) > 0.5 else (255, 255, 255)
@@ -285,11 +283,11 @@ def draw_detections(image_path, predictions,conf_thres,COCO_CLASSES):
     boxes_xyxy[:, 1] = boxes[:, 1] - boxes[:, 3]/2.
     boxes_xyxy[:, 2] = boxes[:, 0] + boxes[:, 2]/2.
     boxes_xyxy[:, 3] = boxes[:, 1] + boxes[:, 3]/2.
-    dets = multiclass_nms(boxes_xyxy, scores, nms_thr=0.45, score_thr=0.1)
+    dets = multiclass_nms(boxes_xyxy, scores, nms_thr=0.45, score_thr=conf_thres)
+    print(dets.shape)
     if dets is not None:
         final_boxes, final_scores, final_cls_inds = dets[:, :4], dets[:, 4], dets[:, 5]
-        origin_img = vis(image, final_boxes, final_scores, final_cls_inds,
-                         conf=conf_thres, class_names=COCO_CLASSES)
+        origin_img = vis(image, final_boxes, final_scores, final_cls_inds, class_names=COCO_CLASSES)
 
         # Show the image with bounding boxes
         cv2.imshow("NNCTRL Inference", origin_img)
@@ -309,7 +307,7 @@ if __name__ == "__main__":
 
 
     # Confidence threshold
-    conf_thres: float = .75  # @param {type:"number"}
+    conf_thres: float = .65  # @param {type:"number"}
     iou_thres: float = .45  # @param {type:"number"}
     max_det: int = 1000  # @param {type:"integer"}
     agnostic_nms: bool = False  # @param {type:"boolean"}
